@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
-<title>北交所首日卖出助手 · 杰理科技920138</title>
+<title>北交所首日卖出助手 v1.4</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
@@ -17,6 +17,8 @@
   .chip{font-size:11px;padding:2px 8px;border-radius:99px;white-space:nowrap}
   .hide{display:none!important}
   ::-webkit-scrollbar{display:none}
+  @keyframes flash{0%,100%{opacity:1}50%{opacity:.45}}
+  .flash{animation:flash 1s infinite}
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 max-w-md mx-auto pb-24 select-none">
@@ -24,8 +26,8 @@
 <!-- 顶栏 -->
 <header class="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
   <div>
-    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.3</span></div>
-    <div class="text-[11px] text-slate-400">杰理科技 920138 · 8/12周三上市 · 规则经47只样本回测校准</div>
+    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.4</span></div>
+    <div class="text-[11px] text-slate-400">规则经47只样本回测 + 8/11珈凯、8/12杰理实盘校准</div>
   </div>
   <div class="flex flex-col items-end gap-0.5">
     <span id="qDot" class="chip bg-slate-800 text-slate-400">行情未连</span>
@@ -84,13 +86,14 @@
   </div>
 
   <div class="card mt-2">
-    <div class="font-bold text-sm">中签者纪律（卖出助手v1.2.0）</div>
+    <div class="font-bold text-sm">中签者纪律（卖出助手v1.4）</div>
     <ul class="text-[12px] text-slate-300 mt-1 space-y-1 leading-5">
       <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单</li>
       <li>② 开盘前5分钟拉升窗结束，未成交撤单，转衰减率规则</li>
       <li>③ 10:15 衰减&gt;55% → 市价清仓（89%样本属此类，其后中位-5.8%）</li>
       <li>④ &gt;66元只卖不追；触发临停看复牌5分钟量能</li>
       <li>⑤ 首日清仓不留过夜（次日下跌概率~70%）</li>
+      <li class="text-amber-300">⑥ 9:40-10:00 规则盲区：手放开，禁止 discretionary 单笔卖（含单次破均价线）；等10:15衰减分型再动（8/12杰理实测：9:49卖54.82错过强型二波58.85）</li>
     </ul>
   </div>
 </section>
@@ -146,18 +149,26 @@
   <div class="card">
     <div class="flex gap-2">
       <input id="inCode" value="920138" inputmode="numeric" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono font-bold">
+      <button onclick="fetchParams()" class="bg-slate-800 active:bg-slate-700 rounded-lg px-3 text-sm">取参</button>
       <button onclick="loadQuote(true)" class="bg-amber-500 text-slate-950 font-bold rounded-lg px-4 text-sm active:opacity-70">刷新</button>
     </div>
-    <label class="flex items-center gap-2 mt-2 text-[12px] text-slate-400"><input id="autoRefresh" type="checkbox" checked class="accent-amber-500"> 每10秒自动刷新</label>
+    <div id="paramInfo" class="text-[11px] text-slate-500 mt-1">换股：填代码点「取参」自动拉发行价/名称；流通盘开盘后按换手率自动推导，亦可手填覆盖</div>
+    <label class="flex items-center gap-2 mt-2 text-[12px] text-slate-400"><input id="autoRefresh" type="checkbox" checked class="accent-amber-500"> 每10秒自动刷新（所有页签生效）</label>
     <div class="grid grid-cols-2 gap-2 mt-2">
       <label class="text-[11px] text-slate-400">发行价
         <input id="inIssue" type="number" step="0.01" value="18.86" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-100">
       </label>
-      <label class="text-[11px] text-slate-400">首日流通(万股)
+      <label class="text-[11px] text-slate-400">首日流通(万股) <span id="floatSrc" class="text-slate-600"></span>
         <input id="inFloat" type="number" step="0.1" value="3461.4" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-100">
       </label>
     </div>
+    <label class="flex items-center gap-2 mt-2 text-[12px] text-slate-400"><input id="alertOn" type="checkbox" checked class="accent-amber-500"> 声音+震动提醒
+      <button onclick="askNotif()" class="chip bg-slate-800 text-slate-300 ml-auto">开启后台通知</button>
+    </label>
   </div>
+
+  <!-- 阶段横幅：盲区/等待分型 -->
+  <div id="phaseBox" class="hide card !py-3 text-center font-bold text-sm"></div>
 
   <div class="card mt-2">
     <div class="flex items-end justify-between">
@@ -176,11 +187,25 @@
       <div><div class="text-slate-500">最低</div><div id="mLow" class="font-mono dn">--</div></div>
       <div><div class="text-slate-500">成交额</div><div id="mAmt" class="font-mono">--</div></div>
     </div>
-    <div class="mt-3">
-      <div class="flex justify-between text-[11px] text-slate-400"><span>累计换手（按3461.4万流通盘）</span><span id="mToPct" class="font-mono font-bold">--</span></div>
-      <div class="h-2 bg-slate-800 rounded-full mt-1 overflow-hidden"><div id="mToBar" class="h-full bg-emerald-500 rounded-full transition-all" style="width:0%"></div></div>
-      <div id="mToMsg" class="text-[11px] mt-1 text-slate-500">黄灯40-45% · 橙灯55-60% · 红灯65%+（承接过热或出货，结合价格位置判断）</div>
+    <!-- 实时均价线 -->
+    <div class="mt-3 bg-slate-900 rounded-lg px-3 py-2">
+      <div class="flex justify-between text-[12px]"><span class="text-slate-400">实时均价线 <span id="mVwap" class="font-mono text-slate-100">--</span></span><span id="mVwapState" class="font-mono text-slate-400">--</span></div>
+      <div class="text-[11px] text-slate-500 mt-0.5" id="mVwapNote">10:00前破线多为震荡假信号，不触发卖出；盲区手放开</div>
     </div>
+    <div class="mt-3">
+      <div class="flex justify-between text-[11px] text-slate-400"><span>累计换手（流通盘自动推导）</span><span id="mToPct" class="font-mono font-bold">--</span></div>
+      <div class="h-2 bg-slate-800 rounded-full mt-1 overflow-hidden"><div id="mToBar" class="h-full bg-emerald-500 rounded-full transition-all" style="width:0%"></div></div>
+      <div id="mToMsg" class="text-[11px] mt-1 text-slate-500">黄灯40-45% · 橙灯55-60% · 红灯65%+</div>
+    </div>
+  </div>
+
+  <!-- 梯子成交跟踪 -->
+  <div class="card mt-2">
+    <div class="flex justify-between items-center mb-1">
+      <div class="font-bold text-sm">预埋梯子跟踪</div>
+      <span id="ratioChip" class="chip bg-slate-800 text-slate-400">首分钟量比 --</span>
+    </div>
+    <div id="ladderTrack" class="text-[12px] text-slate-500">在「预埋单」页生成梯子后，此处实时显示各档成交状态</div>
   </div>
 
   <div class="card mt-2">
@@ -188,18 +213,28 @@
     <div id="haltBox" class="text-[12px] text-slate-500">等开盘价确定后自动计算</div>
   </div>
 
+  <!-- 衰减率自动判定 -->
   <div class="card mt-2">
-    <div class="font-bold text-sm">10:15 衰减率判定</div>
-    <div class="grid grid-cols-2 gap-2 mt-2">
-      <label class="text-[11px] text-slate-400">10:00累计换手%
-        <input id="inT1000" type="number" step="0.1" inputmode="decimal" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-100">
-      </label>
-      <label class="text-[11px] text-slate-400">10:15累计换手%
-        <input id="inT1015" type="number" step="0.1" inputmode="decimal" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-100">
-      </label>
+    <div class="font-bold text-sm">10:15 衰减率判定 <span class="text-[10px] text-slate-500 font-normal">分钟数据自动计算，免手填</span></div>
+    <div id="decayAuto" class="mt-2 text-sm text-slate-500">开盘后自动采集分钟量能 · 10:15 出分型与动作卡</div>
+    <details class="mt-2 text-[11px] text-slate-500">
+      <summary>手动覆盖（分钟数据缺失时）</summary>
+      <div class="grid grid-cols-2 gap-2 mt-2">
+        <label>10:00累计换手%<input id="inT1000" type="number" step="0.1" inputmode="decimal" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-100"></label>
+        <label>10:15累计换手%<input id="inT1015" type="number" step="0.1" inputmode="decimal" class="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-slate-100"></label>
+      </div>
+      <button onclick="calcDecayManual()" class="mt-2 w-full bg-slate-800 active:bg-slate-700 rounded-lg py-2 text-sm font-bold">手动计算</button>
+      <div class="mt-1">衰减率 = 10:00-10:15每分钟均量 ÷ 前30分钟每分钟均量（比值本身，&lt;40偏强 / 40-55中性 / &gt;55偏弱）</div>
+    </details>
+  </div>
+
+  <!-- 信号流 -->
+  <div class="card mt-2">
+    <div class="flex justify-between items-center mb-1">
+      <div class="font-bold text-sm">信号流</div>
+      <span class="text-[10px] text-slate-500">声音/震动/后台通知同步</span>
     </div>
-    <button onclick="calcDecay()" class="mt-2 w-full bg-slate-800 active:bg-slate-700 rounded-lg py-2 text-sm font-bold">计算衰减率</button>
-    <div id="decayBox" class="mt-2 text-sm text-slate-500">公式：衰减 = 1 − (10:00-10:15每分钟均量 ÷ 前30分钟每分钟均量)</div>
+    <div id="sigFeed" class="text-[12px] space-y-1"></div>
   </div>
 
   <div class="card mt-2">
@@ -247,7 +282,7 @@
 </main>
 
 <!-- 底部导航 -->
-<nav class="fixed bottom-0 inset-x-0 z-20 max-w-md mx-auto bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4 py-1.5 px-2" style="padding-bottom:calc(6px + env(safe-area-inset-bottom))">
+<nav class="fixed bottom-0 inset-x-0 z-20 max-w-md mx-auto bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4 py-1.5 px-2" style="padding-bottom:calc(6px + env(safe-area-insert-bottom,6px))">
   <button onclick="switchTab('plan')" id="btn-plan" class="tabbtn on flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px]"><iconify-icon icon="mdi:clipboard-text-outline" width="22"></iconify-icon>盘前预案</button>
   <button onclick="switchTab('ladder')" id="btn-ladder" class="tabbtn flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] text-slate-400"><iconify-icon icon="mdi:calculator-variant-outline" width="22"></iconify-icon>预埋单</button>
   <button onclick="switchTab('monitor')" id="btn-monitor" class="tabbtn flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] text-slate-400"><iconify-icon icon="mdi:chart-line" width="22"></iconify-icon>盘中监控</button>
@@ -258,14 +293,32 @@
 'use strict';
 /* ============ 全局状态 ============ */
 const ISSUE_DEFAULT=18.86, FLOAT_DEFAULT=3461.4;
-let Q=null, timer=null;
+let Q=null, MIN=[], LADDER=null, liveFloat=0, floatDirty=false, aucHands=0;
+let decayClass=null, fired={blind:false,wait:false,decay:false,ratio:false,brk:false}, brkCount=0;
 
 function $(id){return document.getElementById(id);}
 function fmt(x,n){return (x==null||isNaN(x))?'--':Number(x).toFixed(n==null?2:n);}
 function pct(x){return (x==null||isNaN(x))?'--':(x>=0?'+':'')+x.toFixed(2)+'%';}
 function cls(x){return x>=0?'up':'dn';}
+function nsec(){const d=new Date();return d.getHours()*3600+d.getMinutes()*60+d.getSeconds();}
+function hm(){const d=new Date();return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
 
-/* ============ 行情获取（fetch优先，script注入兜底） ============ */
+/* ============ 提醒 ============ */
+let AC=null;
+function beep(n){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();for(let i=0;i<(n||3);i++){const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=880;o.connect(g);g.connect(AC.destination);const t=AC.currentTime+i*0.18;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.3,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);o.start(t);o.stop(t+0.15);}}catch(e){}}
+function askNotif(){if(!('Notification' in window)){alert('浏览器不支持通知');return;}Notification.requestPermission().then(p=>alert(p==='granted'?'后台通知已开启':'未授权'));}
+function push(txt,hot){
+  const box=$('sigFeed');
+  const d=document.createElement('div');
+  d.className='flex gap-2 bg-slate-900 rounded px-2 py-1 '+(hot?'ring-1 ring-amber-400':'');
+  d.innerHTML='<span class="font-mono text-slate-500 shrink-0">'+hm()+'</span><span class="'+(hot?'text-amber-300 font-bold':'text-slate-300')+'">'+txt+'</span>';
+  box.prepend(d);
+  while(box.children.length>30)box.removeChild(box.lastChild);
+  if($('alertOn').checked&&hot){beep(3);try{navigator.vibrate&&navigator.vibrate([200,100,200]);}catch(e){}
+    if(document.hidden&&'Notification' in window&&Notification.permission==='granted'){try{new Notification('卖出助手',{body:txt});}catch(e){}}}
+}
+
+/* ============ 行情获取 ============ */
 function parseQuote(raw){
   if(!raw) return null;
   const f=raw.split('~');
@@ -293,10 +346,40 @@ async function fetchQuote(code){
     document.head.appendChild(s);
   });
 }
+async function fetchMinute(code){
+  try{
+    const r=await fetch('https://web.ifzq.gtimg.cn/appstock/app/minute/query?code=bj'+code,{cache:'no-store'});
+    const j=await r.json();
+    const rows=j.data['bj'+code].data.data;
+    MIN=rows.map(s=>{const p=s.split(' ');return{t:p[0],px:+p[1],cv:+p[2]};});
+  }catch(e){}
+}
+/* 换股取参：东财 datacenter（CORS *） */
+async function fetchParams(){
+  const code=$('inCode').value.trim();
+  try{
+    const url='https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_NEEQ_ISSUEINFO_LIST&columns=SECURITY_CODE,SECURITY_NAME_ABBR,ISSUE_PRICE,SELECT_LISTING_DATE,EXPECT_ISSUE_NUM&filter=(SECURITY_CODE%3D%22'+code+'%22)&pageSize=1&sortColumns=SELECT_LISTING_DATE&sortTypes=-1';
+    const r=await fetch(url);const j=await r.json();
+    const row=j.result&&j.result.data&&j.result.data[0];
+    if(!row){$('paramInfo').innerHTML='<span class="text-rose-300">未查到该代码的新股发行信息</span>';return;}
+    if(row.ISSUE_PRICE)$('inIssue').value=row.ISSUE_PRICE;
+    $('mName').textContent=row.SECURITY_NAME_ABBR||code;
+    const dt=row.SELECT_LISTING_DATE?String(row.SELECT_LISTING_DATE).slice(0,10):'';
+    $('paramInfo').innerHTML='✓ '+row.SECURITY_NAME_ABBR+' · 发行价 '+row.ISSUE_PRICE+' · 上市 '+dt+' · 总发行 '+(row.EXPECT_ISSUE_NUM/1e4).toFixed(0)+'万股；流通盘开盘后按换手率自动推导';
+    push('已取参：'+row.SECURITY_NAME_ABBR+' 发行价'+row.ISSUE_PRICE,false);
+  }catch(e){$('paramInfo').innerHTML='<span class="text-rose-300">取参失败，请手填发行价/流通盘</span>';}
+}
 
-/* ============ 监控页渲染 ============ */
+/* ============ 监控渲染 ============ */
 function issue(){return parseFloat($('inIssue').value)||ISSUE_DEFAULT;}
-function floatShares(){return (parseFloat($('inFloat').value)||FLOAT_DEFAULT)*1e4;}
+function floatShares(){
+  if(floatDirty) return (parseFloat($('inFloat').value)||FLOAT_DEFAULT)*1e4;
+  if(liveFloat>0) return liveFloat*1e4;
+  return (parseFloat($('inFloat').value)||FLOAT_DEFAULT)*1e4;
+}
+$('inFloat').addEventListener('input',()=>{floatDirty=true;$('floatSrc').textContent='(手动)';});
+
+function cvAt(t){let v=null;for(const m of MIN){if(m.t<=t)v=m.cv;else break;}return v;}
 
 async function loadQuote(manual){
   const code=$('inCode').value.trim();
@@ -306,12 +389,16 @@ async function loadQuote(manual){
     if(!q||!q.price){
       $('qDot').textContent='暂无行情';$('qDot').className='chip bg-slate-800 text-slate-400';
       $('mPrice').textContent='未开盘';$('mPrice').className='text-4xl font-bold font-mono text-slate-500';
-      $('mName').textContent=(q&&q.name)||code;
-      $('mToMsg').textContent='8/12 9:30 开盘后自动刷新';
       return;
     }
     $('qDot').textContent='行情已连';$('qDot').className='chip bg-emerald-500/15 text-emerald-300';
     $('qTime').textContent=q.time?('更新 '+q.time.slice(8,10)+':'+q.time.slice(10,12)):'';
+    // 流通盘自动推导：东财换手率口径=首日自由流通
+    if(q.turnover>0.5&&q.volHand>0&&!floatDirty){
+      liveFloat=q.volHand*100/(q.turnover/100)/1e4;
+      $('inFloat').value=liveFloat.toFixed(1);
+      $('floatSrc').textContent='(自动)';
+    }
     const ip=issue();
     const vsI=(q.price/ip-1)*100;
     const vsO=q.open?(q.price/q.open-1)*100:null;
@@ -324,7 +411,6 @@ async function loadQuote(manual){
     $('mHigh').textContent=fmt(q.high);
     $('mLow').textContent=fmt(q.low);
     $('mAmt').textContent=q.amount!=null?(q.amount>=1e4?(q.amount/1e4).toFixed(2)+'亿':q.amount.toFixed(0)+'万'):'--';
-    // 换手：按自定义流通盘
     const to=q.volHand!=null?q.volHand*100/floatShares()*100:null;
     $('mToPct').textContent=to==null?'--':to.toFixed(1)+'%';
     $('mToBar').style.width=Math.min(to||0,100)+'%';
@@ -333,34 +419,122 @@ async function loadQuote(manual){
     else if(to>=55){lamp='橙灯 · 接近充分换手，盯均价线';color='bg-orange-500';}
     else if(to>=40){lamp='黄灯 · 换手过半，准备衰减判定';color='bg-amber-400';}
     $('mToBar').className='h-full '+color+' rounded-full transition-all';
-    $('mToMsg').textContent=lamp+(q.turnover!=null?'（东财口径换手 '+fmt(q.turnover,1)+'%）':'');
+    $('mToMsg').textContent=lamp;
+    // 实时均价线
+    const vwap=(q.amount>0&&q.volHand>0)?q.amount*1e4/(q.volHand*100):null;
+    $('mVwap').textContent=fmt(vwap);
+    if(vwap){
+      const d=(q.price/vwap-1)*100;
+      $('mVwapState').textContent=(d>=0?'线上 +':'线下 ')+Math.abs(d).toFixed(2)+'%';
+      $('mVwapState').className='font-mono '+(d>=0?'up':'dn');
+    }
     renderHalt(q.open, q.price);
-    // 回填开盘价到预埋单页
     if(q.open && !$('inOpen').value) {$('inOpen').value=q.open;calcLadder();}
-    // 自动采集竞价换手：9:25:00-9:29:59 快照累计量=纯竞价量（手动输入优先）
-    const nw=new Date(),nsec=nw.getHours()*3600+nw.getMinutes()*60+nw.getSeconds();
-    if(!aucManual && q.volHand>0 && nsec>=9*3600+25*60 && nsec<=9*3600+29*60+59){
+    // 自动采集竞价量（9:25-9:30，手动优先）
+    const ns=nsec();
+    if(!aucManual && q.volHand>0 && ns>=9*3600+25*60 && ns<=9*3600+29*60+59){
+      aucHands=q.volHand;
       $('inAucVol').value=(q.volHand/100).toFixed(1);
       $('inAucPct').value=(q.volHand*100/floatShares()*100).toFixed(2);
-      $('aucSrc').textContent='✓ 竞价量已自动采集（'+(q.time?q.time.slice(8,10)+':'+q.time.slice(10,12):'9:2x')+' 快照 '+(q.volHand/100).toFixed(1)+'万股）';
+      $('aucSrc').textContent='✓ 竞价量已自动采集（'+(q.volHand/100).toFixed(1)+'万股）';
       $('aucSrc').className='text-[11px] text-emerald-300 mt-1';
       calcLadder();
     }
-    // 收盘复盘自动采集：15:00后快照=收盘定格值，四框皆空时自动填（手填优先）
-    if(nsec>=15*3600 && q.price && q.volHand>0 && !['rvOpen','rvHigh','rvClose','rvVwap'].some(id=>$(id).value)){
+    // 收盘复盘自动采集
+    if(ns>=15*3600 && q.price && q.volHand>0 && !['rvOpen','rvHigh','rvClose','rvVwap'].some(id=>$(id).value)){
       $('rvOpen').value=q.open;$('rvHigh').value=q.high;$('rvClose').value=q.price;
       $('rvVwap').value=(q.amount*100/q.volHand).toFixed(2);
       calcReview();
     }
+    runSignals(q,vwap,ns);
   }catch(e){
     $('qDot').textContent='连接失败';$('qDot').className='chip bg-rose-500/15 text-rose-300';
   }
 }
 
+/* ============ 阶段横幅 + 信号引擎 ============ */
+function runSignals(q,vwap,ns){
+  const pb=$('phaseBox');
+  const inBlind=ns>=9*3600+40*60&&ns<10*3600;
+  const inWait=ns>=10*3600&&ns<10*3600+15*60;
+  if(inBlind){
+    pb.classList.remove('hide');
+    pb.className='card !py-3 text-center font-bold text-sm bg-amber-500/15 border-amber-500/40 text-amber-300 flash';
+    pb.innerHTML='⛔ 规则盲区 9:40-10:00 · 手放开<br><span class="text-[11px] font-normal">禁止 discretionary 单笔卖（含单次破均价线）· 等10:15分型</span>';
+    if(!fired.blind){fired.blind=true;push('进入规则盲区9:40-10:00：手放开，不单笔卖，等10:15分型',true);}
+  }else if(inWait){
+    pb.classList.remove('hide');
+    pb.className='card !py-3 text-center font-bold text-sm bg-sky-500/10 border-sky-500/30 text-sky-300';
+    pb.innerHTML='⏳ 10:00-10:15 衰减采样中 · 10:15 出动作卡';
+    if(!fired.wait){fired.wait=true;push('10:00-10:15衰减采样中，10:15出分型与动作',false);}
+  }else if(ns>=10*3600+15*60&&decayClass){
+    pb.classList.remove('hide');
+    const cmap={weak:['bg-rose-500/15 border-rose-500/40 text-rose-300','偏弱 → 已给清仓卡'],mid:['bg-amber-500/15 border-amber-500/40 text-amber-300','中性 → 减半仓，剩余盯均价线'],strong:['bg-sky-500/15 border-sky-500/40 text-sky-300','偏强 → 持有等二波，破均价线再卖']}[decayClass];
+    pb.className='card !py-3 text-center font-bold text-sm '+cmap[0];
+    pb.innerHTML=cmap[1];
+  }else pb.classList.add('hide');
+
+  // 首分钟量比（出货确认）
+  const b1=cvAt('0930');
+  if(b1&&aucHands>0){
+    const ratio=(b1-aucHands)/aucHands;
+    $('ratioChip').textContent='首分钟量比 '+ratio.toFixed(1)+'x';
+    if(ratio>3&&!fired.ratio){fired.ratio=true;push('首分钟量='+ratio.toFixed(1)+'倍竞价量(>3x)：卖方出货确认，未成交剩余立即市价',true);}
+  }
+  // 梯子成交跟踪
+  if(LADDER&&q.high){
+    let changed=false;
+    LADDER.tiers.forEach(t=>{if(!t.filled&&q.high>=t.px){t.filled=true;changed=true;push('梯子第'+t.i+'档 '+t.px.toFixed(2)+' 已成交',true);}});
+    $('ladderTrack').innerHTML=LADDER.tiers.map(t=>'<div class="flex justify-between bg-slate-900 rounded px-2 py-1 mt-1"><span>第'+t.i+'档 +'+t.pct+'% → '+t.px.toFixed(2)+' ×'+t.qty+'</span><span class="'+(t.filled?'text-emerald-300 font-bold':'text-slate-500')+'">'+(t.filled?'✓ 已成交':'未成交')+'</span></div>').join('');
+  }
+  // 均价线破线卖点（仅10:15后且非偏弱；偏弱10:15已清仓）
+  if(vwap&&ns>=10*3600+15*60&&decayClass&&decayClass!=='weak'){
+    if(q.price<vwap){brkCount++;}else{brkCount=0;}
+    if(brkCount>=2&&!fired.brk){fired.brk=true;push('二波后跌破均价线 '+vwap.toFixed(2)+' 且未收回 → 卖出信号，现价 '+q.price.toFixed(2),true);}
+    $('mVwapNote').textContent=decayClass==='strong'?'偏强型：二波后破均价线且不收回=卖出信号':'中性型：剩余半仓以破均价线为最后卖点';
+  }
+  // 衰减自动判定
+  renderDecayAuto(q,ns);
+}
+
+function renderDecayAuto(q,ns){
+  const box=$('decayAuto');
+  if(ns<10*3600+15*60){
+    const c0959=cvAt('0959');
+    box.innerHTML=c0959?'<span class="text-slate-400">采样中 · 前30分钟均量 '+(c0959/30).toFixed(0)+' 手/分 · 10:15 出分型</span>':'<span class="text-slate-500">开盘后自动采集分钟量能 · 10:15 出分型与动作卡</span>';
+    return;
+  }
+  const c0959=cvAt('0959'),c1015=cvAt('1015');
+  if(!c0959||!c1015||c0959<=0){box.innerHTML='<span class="text-rose-300">分钟数据缺失，请用下方手动覆盖</span>';return;}
+  const ratio=((c1015-c0959)/16)/(c0959/30)*100;
+  let v,c,act;
+  if(ratio<40){decayClass='strong';v='偏强';c='bg-sky-500/15 text-sky-300 border-sky-500/40';
+    act='可继续持有，高点可能在午盘后。卖出信号=二波后跌破均价线且不收回。现价 '+fmt(q.price);}
+  else if(ratio<=55){decayClass='mid';v='中性';c='bg-amber-500/15 text-amber-300 border-amber-500/40';
+    act='现在减半仓（现价 '+fmt(q.price)+'），剩余半仓盯均价线，午盘回抽不收回=最后卖点';}
+  else{decayClass='weak';v='偏弱';c='bg-rose-500/15 text-rose-300 border-rose-500/40';
+    act='立即市价清仓，任何反弹都是卖点（现价 '+fmt(q.price)+'）。回测89%样本属此档，10:15→收盘中位-5.8%';}
+  box.innerHTML='<div class="border rounded-lg px-3 py-2 '+c+'"><div class="font-bold">衰减率 '+fmt(ratio,1)+'% → '+v+'型</div><div class="text-[12px] mt-1 leading-5">'+act+'</div></div>';
+  if(!fired.decay){fired.decay=true;push('10:15衰减 '+ratio.toFixed(1)+'% → '+v+'型：'+act,true);}
+}
+
+function calcDecayManual(){
+  const t0=parseFloat($('inT1000').value),t1=parseFloat($('inT1015').value);
+  const box=$('decayAuto');
+  if(isNaN(t0)||isNaN(t1)||t1<=t0){box.innerHTML='<span class="text-rose-300">请填写 10:00 与 10:15 的累计换手（后者需更大）</span>';return;}
+  const ratio=(t1-t0)/15/(t0/30)*100;
+  let v,c,act;
+  if(ratio<40){decayClass='strong';v='偏强';c='bg-sky-500/15 text-sky-300 border-sky-500/40';act='可继续持有，高点可能在午盘后';}
+  else if(ratio<=55){decayClass='mid';v='中性';c='bg-amber-500/15 text-amber-300 border-amber-500/40';act='减半仓留半仓，看股价对均价线位置';}
+  else{decayClass='weak';v='偏弱';c='bg-rose-500/15 text-rose-300 border-rose-500/40';act='立即市价清仓，任何反弹都是卖点';}
+  box.innerHTML='<div class="border rounded-lg px-3 py-2 '+c+'"><div class="font-bold">衰减率 '+fmt(ratio,1)+'% → '+v+'型（手动）</div><div class="text-[12px] mt-1 leading-5">'+act+'</div></div>';
+  push('手动衰减 '+ratio.toFixed(1)+'% → '+v+'型：'+act,true);
+}
+
 function renderHalt(open,price){
   const box=$('haltBox');
   if(!open){box.innerHTML='<span class="text-slate-500 text-[12px]">等开盘价确定后自动计算</span>';return;}
-  const lv=[['+30%临停',open*1.3,1],['+60%临停',open*1.6,1],['-30%临停',open*0.7,-1],['-60%临停',open*0.4,-1]];
+  const lv=[['+30%临停',open*1.3],['+60%临停',open*1.6],['-30%临停',open*0.7],['-60%临停',open*0.4]];
   box.innerHTML='<div class="grid grid-cols-2 gap-2">'+lv.map(([t,v])=>{
     const dist=price?(price/v-1)*100:null;
     const near=dist!=null&&Math.abs(dist)<3;
@@ -370,7 +544,7 @@ function renderHalt(open,price){
       +(dist==null?'':(dist>0?'还差 '+fmt(dist,1)+'%':'已越过 '+fmt(-dist,1)+'%'))
       +(near?' ⚠接近':'')+'</div></div>';
   }).join('')+'</div>'
-  +'<div class="text-[11px] text-slate-500 mt-1.5">回测6/6：高点在最后一次临停之后、复牌5分钟均值+15.8%（5涨1跌）→ 临停不恐慌，复牌看5分钟量能再动手。触发档位=平价/开盘价-1。</div>';
+  +'<div class="text-[11px] text-slate-500 mt-1.5">临停≠卖出信号：复牌看5分钟量能再动手，勿预设回落。</div>';
 }
 
 /* ============ 预埋单 ============ */
@@ -401,36 +575,23 @@ function calcLadder(){
   const qtys=[s1,s2,s3];
   bb.innerHTML='<span class="chip '+cls2+' text-[13px] px-3 py-1">'+tag+' '+fmt(ap,1)+'%</span><div class="text-[11px] text-slate-400 mt-1">'+note+'</div>';
   bb.className='mt-3 text-center';
-  $('ladderRows').innerHTML=tiers.map((t,i)=>{
-    const px=open*(1+t/100);
+  LADDER={open,ap,tiers:tiers.map((t,i)=>({i:i+1,pct:t,px:open*(1+t/100),qty:qtys[i],filled:false}))};
+  $('ladderRows').innerHTML=LADDER.tiers.map(t=>{
     return '<tr class="border-t border-slate-800">'
-      +'<td class="py-2 text-slate-300">第'+(i+1)+'档 1/'+3+'</td>'
-      +'<td class="text-right font-bold text-amber-300">'+fmt(px)+'</td>'
-      +'<td class="text-right text-slate-400">+'+t+'%</td>'
-      +'<td class="text-right '+cls((px/ip-1)*100)+'">'+pct((px/ip-1)*100)+'</td>'
-      +'<td class="text-right">'+qtys[i]+'</td></tr>';
+      +'<td class="py-2 text-slate-300">第'+t.i+'档 1/3</td>'
+      +'<td class="text-right font-bold text-amber-300">'+fmt(t.px)+'</td>'
+      +'<td class="text-right text-slate-400">+'+t.pct+'%</td>'
+      +'<td class="text-right '+cls((t.px/ip-1)*100)+'">'+pct((t.px/ip-1)*100)+'</td>'
+      +'<td class="text-right">'+t.qty+'</td></tr>';
   }).join('');
   box.classList.remove('hide');
   if(open>0){renderHalt(open, Q&&Q.price?Q.price:open);}
 }
 function copyLadder(){
   const rows=[...$('ladderRows').querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim()).join(' '));
-  const txt='杰理科技920138 预埋卖单\n'+rows.join('\n')+'\n规则：拉升窗(前5分钟)结束未成交撤单→转衰减率';
+  const txt='预埋卖单\n'+rows.join('\n')+'\n规则：拉升窗(前5分钟)结束未成交撤单→转衰减率；9:40-10:00盲区手放开';
   if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>alert('已复制到剪贴板'));}
   else{prompt('长按复制：',txt);}
-}
-
-/* ============ 衰减率 ============ */
-function calcDecay(){
-  const t0=parseFloat($('inT1000').value),t1=parseFloat($('inT1015').value);
-  const box=$('decayBox');
-  if(isNaN(t0)||isNaN(t1)||t1<=t0){box.innerHTML='<span class="text-rose-300">请填写 10:00 与 10:15 的累计换手（后者需更大）</span>';return;}
-  const v1=t0/30,v2=(t1-t0)/15,d=(1-v2/v1)*100;
-  let v,c,act;
-  if(d<40){v='偏强';c='bg-sky-500/15 text-sky-300 border-sky-500/40';act='可继续持有，高点可能在午盘后；"避开9:40-10:00卖"仅此档适用';}
-  else if(d<=55){v='中性';c='bg-amber-500/15 text-amber-300 border-amber-500/40';act='减半仓留半仓，看股价对均价线位置（回测该档100%收盘高于10:15，样本4只）';}
-  else{v='偏弱';c='bg-rose-500/15 text-rose-300 border-rose-500/40';act='10:15 立即市价清仓，任何反弹都是卖点。回测89%样本属此档，10:15→收盘中位 -5.8%，仅17%收盘高于10:15';}
-  box.innerHTML='<div class="border rounded-lg px-3 py-2 '+c+'"><div class="font-bold">衰减率 '+fmt(d,1)+'% → '+v+'</div><div class="text-[12px] mt-1 leading-5">'+act+'</div></div>';
 }
 
 /* ============ 执行日志 ============ */
@@ -439,7 +600,7 @@ function saveLog(a){localStorage.setItem('bse_log',JSON.stringify(a));}
 function addLog(){
   const px=$('logPx').value,qty=$('logQty').value,note=$('logNote').value.trim();
   if(!px)return;
-  const a=getLog();a.push({t:new Date().toTimeString().slice(0,5),px:+px,qty:+(qty||0),note});
+  const a=getLog();a.push({t:hm(),px:+px,qty:+(qty||0),note});
   saveLog(a);$('logPx').value='';$('logQty').value='';$('logNote').value='';renderLog();
 }
 function renderLog(){
@@ -450,7 +611,7 @@ function delLog(i){const a=getLog();a.splice(i,1);saveLog(a);renderLog();}
 function clearLog(){if(confirm('清空执行日志？')){saveLog([]);renderLog();}}
 
 /* ============ 复盘 ============ */
-const CHECKS=['9:25 前完成三情景预案','按竞价分支预埋了分批单','拉升窗结束撤掉未成交单','按衰减率/均价线规则执行','没有过夜持仓'];
+const CHECKS=['9:25 前完成三情景预案','按竞价分支预埋了分批单','拉升窗结束撤掉未成交单','9:40-10:00 盲区没有 discretionary 单笔卖','按衰减率/均价线规则执行','没有过夜持仓'];
 function initChecks(){
   const saved=JSON.parse(localStorage.getItem('bse_chk')||'{}');
   $('checkList').innerHTML=CHECKS.map((c,i)=>'<label class="flex items-center gap-2"><input type="checkbox" data-i="'+i+'" '+(saved[i]?'checked':'')+' class="accent-amber-500 w-4 h-4" onchange="saveChk()"><span>'+c+'</span></label>').join('');
@@ -475,7 +636,7 @@ function calcReview(){
   $('rvBox').innerHTML=html;
 }
 
-/* ============ Tab切换 & 倒计时 & 初始化 ============ */
+/* ============ Tab切换 & 倒计时 & 轮询 ============ */
 function switchTab(t){
   ['plan','ladder','monitor','review'].forEach(x=>{
     $('tab-'+x).classList.toggle('hide',x!==t);
@@ -492,14 +653,20 @@ function tickCountdown(){
   const s=Math.floor((target-now)/1000);
   $('countdown').textContent=label+' '+Math.floor(s/3600)+'h'+String(Math.floor(s%3600/60)).padStart(2,'0')+'m';
 }
+let loopN=0;
 function loop(){
   tickCountdown();
-  if($('autoRefresh').checked && !$('tab-monitor').classList.contains('hide')) loadQuote(false);
+  if($('autoRefresh').checked){
+    loadQuote(false);
+    if(loopN%3===0)fetchMinute($('inCode').value.trim());
+    loopN++;
+  }
 }
 initChecks();
 const g0=localStorage.getItem('bse_grade');if(g0)setGrade(g0);
 renderLog();
 loadQuote(true);
+fetchMinute($('inCode').value.trim());
 setInterval(loop,10000);
 </script>
 </body>
