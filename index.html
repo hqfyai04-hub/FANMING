@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
-<title>北交所首日卖出助手 v1.4</title>
+<title>北交所首日卖出助手 v1.7</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
@@ -26,8 +26,8 @@
 <!-- 顶栏 -->
 <header class="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
   <div>
-    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.6</span></div>
-    <div class="text-[11px] text-slate-400">47只回测 + 珈凯/杰理/恒兴/双英实盘校准</div>
+    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.7</span></div>
+    <div class="text-[11px] text-slate-400">47只回测 + 珈凯/杰理/恒兴/双英/信胜/华大实盘校准 · 填代码自动更新</div>
   </div>
   <div class="flex flex-col items-end gap-0.5">
     <span id="qDot" class="chip bg-slate-800 text-slate-400">行情未连</span>
@@ -40,54 +40,34 @@
 <!-- ================= Tab1 盘前预案 ================= -->
 <section id="tab-plan">
   <div class="card">
+    <div class="flex gap-2 mb-2">
+      <input id="planCode" placeholder="输入新股代码 如920288" inputmode="numeric" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 font-mono font-bold text-slate-100">
+      <button onclick="loadStock($('planCode').value.trim(),true)" class="bg-amber-500 text-slate-950 font-bold rounded-lg px-4 text-sm active:opacity-70">加载</button>
+    </div>
     <div class="flex items-center justify-between mb-2">
-      <div class="font-bold">信胜科技 <span class="text-slate-400 text-xs font-normal">920093.BJ</span></div>
+      <div class="font-bold"><span id="pName">—</span> <span class="text-slate-400 text-xs font-normal"><span id="pCode">------.BJ</span></span></div>
       <span id="countdown" class="chip bg-amber-500/15 text-amber-300">--</span>
     </div>
     <div class="grid grid-cols-3 gap-2 text-center">
-      <div class="bg-slate-900 rounded-lg py-2"><div class="text-[10px] text-slate-500">发行价</div><div class="font-bold text-amber-300">14.35</div></div>
-      <div class="bg-slate-900 rounded-lg py-2"><div class="text-[10px] text-slate-500">发行PE / 行业PE</div><div class="font-bold">9.2 <span class="text-slate-500 font-normal">/ 46.15</span></div></div>
-      <div class="bg-slate-900 rounded-lg py-2"><div class="text-[10px] text-slate-500">首日流通盘</div><div class="font-bold">2520<span class="text-xs text-slate-500">万股</span></div></div>
+      <div class="bg-slate-900 rounded-lg py-2"><div class="text-[10px] text-slate-500">发行价</div><div class="font-bold text-amber-300" id="pIssue">—</div></div>
+      <div class="bg-slate-900 rounded-lg py-2"><div class="text-[10px] text-slate-500">发行PE / 行业PE</div><div class="font-bold" id="pPE">—</div></div>
+      <div class="bg-slate-900 rounded-lg py-2"><div class="text-[10px] text-slate-500">首日流通盘</div><div class="font-bold" id="pFloat">—</div></div>
     </div>
-    <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-400">
-      <div>网上发行 2520万股 · 中签率 0.027%</div>
-      <div>无老股 · <span class="text-rose-300">无绿鞋 · 下行无托底</span></div>
-      <div>申购资金 1.3538万亿 · 近期序列最高</div>
-      <div>战配等 1080万股(30%) 锁定 · 首日不流通</div>
-      <div class="col-span-2 text-amber-300/90">⚠ 周五上市：首日清仓纪律加倍执行，不过周末；无绿鞋票偏弱分支（衰减&gt;55%）10:15清仓须果断</div>
-    </div>
+    <div class="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-slate-400" id="pMeta"></div>
+    <div id="pWarn" class="mt-2 text-[11px] text-amber-300/90"></div>
   </div>
 
-  <div class="text-xs font-bold text-slate-400 mt-3 mb-1">校准后四情景（47只回测 + 资金梯度外推 + 双英次日-29.98%情绪样本）</div>
+  <div class="text-xs font-bold text-slate-400 mt-3 mb-1">四情景开盘预测 <span class="text-[10px] text-slate-500 font-normal">按47只回测锚点自动生成（悲观+90/中性+150/乐观+220/极端+280%），冷门/热门请手动微调</span></div>
 
-  <div class="card border-l-4 !border-l-sky-500">
-    <div class="flex justify-between items-center"><span class="font-bold text-sky-300">悲观（近三日常态区）</span><span class="chip bg-sky-500/15 text-sky-300">概率 ~25%</span></div>
-    <div class="text-sm mt-1">开盘 <b>24-28</b>（+67~95%）· 盘中高 28-33 · 收盘 22-27</div>
-    <div class="text-[11px] text-slate-500 mt-1">恒兴+82.5%、双英+87.6%均落此区上沿——是常态不是黑天鹅。触发：双英次日-30%情绪传导+传统设备题材无光环。开盘26时+30%临停在33.8。无绿鞋但破发概率仍极低（+67%下限）。</div>
-  </div>
-  <div class="card border-l-4 !border-l-emerald-500 mt-2">
-    <div class="flex justify-between items-center"><span class="font-bold text-emerald-300">中性（基准）</span><span class="chip bg-emerald-500/15 text-emerald-300">概率 ~40%</span></div>
-    <div class="text-sm mt-1">开盘 <b>29-34</b>（+102~137%）· 盘中高 36-42 · 收盘 27-33 长上影</div>
-    <div class="text-[11px] text-slate-500 mt-1">资金梯度外推：恒兴12,305亿→+82.5%、双英12,877亿→+87.6%，信胜13,538亿≈+95-100%，叠加PE折价最深（9.2 vs 行业46.15，仅20%）上修。开盘31.5时+30%临停在40.9、+60%在50.4——按此档预测高点36-42，<b class="text-emerald-300">临停是大概率事件</b>，见临停应对卡。</div>
-  </div>
-  <div class="card border-l-4 !border-l-orange-500 mt-2">
-    <div class="flex justify-between items-center"><span class="font-bold text-orange-300">乐观（热度+折价双击）</span><span class="chip bg-orange-500/15 text-orange-300">概率 ~30%</span></div>
-    <div class="text-sm mt-1">开盘 <b>35-40</b>（+144~179%）· 盘中高 43-48 · 收盘 32-38</div>
-    <div class="text-[11px] text-slate-500 mt-1">冻结资金序列最高+PE折价序列最深的组合从未在同一样本出现过，此档概率高于常态。若场外暗盘34附近报价属实，开盘将顶到此区间。开盘&gt;34（外部预测上沿）勿因"超预期"恐慌提前全清，按梯子正常执行（双英教训）。</div>
-  </div>
-  <div class="card border-l-4 !border-l-rose-500 mt-2">
-    <div class="flex justify-between items-center"><span class="font-bold text-rose-300">极端高开（珈凯式）</span><span class="chip bg-rose-500/15 text-rose-300">尾部档 ~5%</span></div>
-    <div class="text-sm mt-1">开盘 <b>≥+200%</b>（本股≥43）· 高点大概率在<b>开盘5分钟内</b>，梯子易全档脱空</div>
-    <div class="text-[11px] text-slate-500 mt-1">专业锂电设备题材不算冷门，但传统设备无军工/芯片稀缺性，此档仅作尾部防线。应对：按薄竞价处理——拉升窗结束未成交立即切衰减率防线，偏弱型10:15清仓（无绿鞋勿犹豫）。</div>
-  </div>
+  <div id="planCards"></div>
 
-  <div class="card mt-2 !bg-amber-500/5 !border-amber-500/30">
+  <div class="card mt-2" id="anchorCard" style="display:none">
     <div class="font-bold text-amber-300 text-sm">估值锚提醒</div>
-    <div class="text-[11px] text-slate-400 mt-1 leading-5">发行EPS≈<b class="text-amber-300">1.56元</b>：15x≈23.4、20x≈31.2、25x≈39.0、30x≈46.8、行业46.15x≈72。发行PE仅为行业20%、序列折价最深，修复空间大但同时是情绪双刃剑。传统锂电设备赛道，接力意愿有限。首日定价由2520万可交易筹码+1.35万亿热度主导，PE只是事后解释。</div>
+    <div class="text-[11px] text-slate-400 mt-1 leading-5" id="anchorBody"></div>
   </div>
 
   <div class="card mt-2">
-    <div class="font-bold text-sm">中签者纪律（卖出助手v1.6）</div>
+    <div class="font-bold text-sm">中签者纪律（卖出助手v1.7）</div>
     <ul class="text-[12px] text-slate-300 mt-1 space-y-1 leading-5">
       <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单（开盘&gt;+75%自动③档+20%，首分钟吸筹自动升档）</li>
       <li>② 开盘前5分钟拉升窗结束：仅①档撤单；竞价换手≤4%时②③<b class="text-amber-300">保留至10:15</b>衰减分型再决定（恒兴教训：撤早了错过二波）</li>
@@ -356,19 +336,73 @@ async function fetchMinute(code){
   }catch(e){}
 }
 /* 换股取参：东财 datacenter（CORS *） */
-async function fetchParams(){
-  const code=$('inCode').value.trim();
+let LIST_TS=0;
+async function fetchParams(){const c=$('inCode').value.trim();if(c)await loadStock(c,false);}
+async function loadStock(code,fromPlan){
+  if(!/^\d{6}$/.test(code)){$('pWarn').textContent='请输入6位新股代码';return;}
+  $('pWarn').innerHTML='<span class="text-slate-500">加载中…</span>';
+  const cols='SECURITY_CODE,SECURITY_NAME_ABBR,ISSUE_PRICE,ISSUE_PE_RATIO,INDUSTRY_PE_RATIO,SELECT_LISTING_DATE,APPLY_DATE,EXPECT_ISSUE_NUM,ONLINE_ISSUE_NUM,ONLINE_ISSUE_LWR,VA_AMT,APPLY_AMT_UPPER,APPLY_NUM_UPPER,MAIN_BUSINESS,PRICE_WAY';
   try{
-    const url='https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_NEEQ_ISSUEINFO_LIST&columns=SECURITY_CODE,SECURITY_NAME_ABBR,ISSUE_PRICE,SELECT_LISTING_DATE,EXPECT_ISSUE_NUM&filter=(SECURITY_CODE%3D%22'+code+'%22)&pageSize=1&sortColumns=SELECT_LISTING_DATE&sortTypes=-1';
+    const url='https://datacenter-web.eastmoney.com/api/data/v1/get?reportName=RPT_NEEQ_ISSUEINFO_LIST&columns='+encodeURIComponent(cols)+'&filter=(SECURITY_CODE%3D%22'+code+'%22)&pageSize=1&sortColumns=APPLY_DATE&sortTypes=-1';
     const r=await fetch(url);const j=await r.json();
     const row=j.result&&j.result.data&&j.result.data[0];
-    if(!row){$('paramInfo').innerHTML='<span class="text-rose-300">未查到该代码的新股发行信息</span>';return;}
-    if(row.ISSUE_PRICE)$('inIssue').value=row.ISSUE_PRICE;
-    $('mName').textContent=row.SECURITY_NAME_ABBR||code;
-    const dt=row.SELECT_LISTING_DATE?String(row.SELECT_LISTING_DATE).slice(0,10):'';
-    $('paramInfo').innerHTML='✓ '+row.SECURITY_NAME_ABBR+' · 发行价 '+row.ISSUE_PRICE+' · 上市 '+dt+' · 总发行 '+(row.EXPECT_ISSUE_NUM/1e4).toFixed(0)+'万股；流通盘开盘后按换手率自动推导';
-    push('已取参：'+row.SECURITY_NAME_ABBR+' 发行价'+row.ISSUE_PRICE,false);
-  }catch(e){$('paramInfo').innerHTML='<span class="text-rose-300">取参失败，请手填发行价/流通盘</span>';}
+    if(!row){$('pWarn').innerHTML='<span class="text-rose-300">未查到 '+code+' 的新股发行信息</span>';return;}
+    localStorage.setItem('bse_code',code);
+    renderPlan(row);
+    // 同步盘中监控页
+    $('inCode').value=code;$('planCode').value=code;
+    if(row.ISSUE_PRICE){$('inIssue').value=row.ISSUE_PRICE;$('mName').textContent=row.SECURITY_NAME_ABBR||code;}
+    if(row.ONLINE_ISSUE_NUM){$('inFloat').value=(row.ONLINE_ISSUE_NUM/1e4).toFixed(0);floatDirty=false;$('floatSrc').textContent='(取参)';}
+    $('paramInfo').innerHTML='✓ 已加载 '+row.SECURITY_NAME_ABBR+'，参数见「盘前预案」页';
+    if(!fromPlan)push('已取参：'+row.SECURITY_NAME_ABBR,false);
+  }catch(e){$('pWarn').innerHTML='<span class="text-rose-300">加载失败（网络/接口），请重试或手填</span>';}
+}
+function renderPlan(row){
+  const ip=+row.ISSUE_PRICE, pe=+row.ISSUE_PE_RATIO, ipe=+row.INDUSTRY_PE_RATIO;
+  const online=row.ONLINE_ISSUE_NUM?row.ONLINE_ISSUE_NUM/1e4:0, total=row.EXPECT_ISSUE_NUM?row.EXPECT_ISSUE_NUM/1e4:0;
+  const lwr=row.ONLINE_ISSUE_LWR!=null?row.ONLINE_ISSUE_LWR:null;
+  const va=row.VA_AMT?row.VA_AMT/1e8:null;
+  const cap=row.APPLY_AMT_UPPER?row.APPLY_AMT_UPPER/1e4:null;
+  const listDate=row.SELECT_LISTING_DATE?String(row.SELECT_LISTING_DATE).slice(0,10):'';
+  const wd=row.SELECT_LISTING_DATE?['日','一','二','三','四','五','六'][new Date(String(row.SELECT_LISTING_DATE).slice(0,10)+'T00:00:00').getDay()]:'';
+  $('pName').textContent=row.SECURITY_NAME_ABBR||row.SECURITY_CODE;
+  $('pCode').textContent=row.SECURITY_CODE+'.BJ';
+  $('pIssue').textContent=ip?ip.toFixed(2):'—';
+  $('pPE').innerHTML=pe?pe.toFixed(1)+' <span class="text-slate-500 font-normal">/ '+(ipe?ipe.toFixed(1):'—')+'</span>':'—';
+  $('pFloat').innerHTML=online?online.toFixed(0)+'<span class="text-xs text-slate-500">万股</span>':'—';
+  const meta=[];
+  meta.push('网上发行 '+(online?online.toFixed(0):'—')+'万股 · 总发行 '+(total?total.toFixed(0):'—')+'万股');
+  meta.push('中签率 '+(lwr!=null?(lwr*100).toFixed(3)+'%':'待公布')+' · 顶格 '+(cap?cap.toFixed(0)+'万':'—'));
+  meta.push('申购资金 '+(va?(va/1e4).toFixed(3)+'万亿':(row.APPLY_DATE?'待公布（'+String(row.APPLY_DATE).slice(5,10)+'申购）':'—')));
+  meta.push((row.MAIN_BUSINESS||'').slice(0,22)||'—');
+  $('pMeta').innerHTML=meta.map(m=>'<div>'+m+'</div>').join('');
+  const warn=[];
+  if(listDate)warn.push('📅 '+listDate+'（周'+wd+'）上市');
+  if(wd==='五')warn.push('周五上市→首日清仓不过周末，纪律加倍');
+  if(cap&&va&&online){const line10=va*1e8*100/(online*1e4)/1e4;warn.push('顶格'+cap.toFixed(0)+'万 ≈ '+(cap/line10).toFixed(2)+'×门槛（门槛按已公布T估）');}
+  $('pWarn').innerHTML=warn.join(' · ');
+  // 四情景（回测锚点：悲观+90/中性+150/乐观+220/极端+280）
+  if(ip){
+    const sc=[
+      ['sky','悲观 +90%','~25%',1.90],
+      ['emerald','中性 +150%','~40%',2.50],
+      ['orange','乐观 +220%','~30%',3.20],
+      ['rose','极端 +280%','尾部~5%',3.80],
+    ];
+    $('planCards').innerHTML=sc.map(([c,name,p,m],idx)=>{
+      const o=ip*m, h=ip*m*1.35, cl=ip*m*1.18;
+      const extra=idx===3?' · 高点大概率开盘5分钟内，梯子易全档脱空，按薄竞价应对':'';
+      return '<div class="card border-l-4 !border-l-'+c+'-500'+(idx?' mt-2':'')+'">'
+        +'<div class="flex justify-between items-center"><span class="font-bold text-'+c+'-300">'+name+'</span><span class="chip bg-'+c+'-500/15 text-'+c+'-300">概率 '+p+'</span></div>'
+        +'<div class="text-sm mt-1">开盘 <b>'+o.toFixed(2)+'</b> · 盘中高 '+h.toFixed(2)+' · 收盘 '+cl.toFixed(2)+extra+'</div>'
+        +'<div class="text-[11px] text-slate-500 mt-1">+30%临停 '+(o*1.3).toFixed(2)+' · +60%临停 '+(o*1.6).toFixed(2)+' · 顶格'+(cap?cap.toFixed(0)+'万':'—')+'</div>'
+        +'</div>';
+    }).join('');
+    $('anchorCard').style.display='';
+    const eps=ip/pe;
+    $('anchorBody').innerHTML='发行EPS≈<b class="text-amber-300">'+eps.toFixed(2)+'元</b>：'+[15,20,25,30].map(x=>x+'x≈'+(eps*x).toFixed(1)).join('、')+(ipe?'、行业'+ipe.toFixed(1)+'x≈'+(eps*ipe).toFixed(1):'')+'。'+(pe&&ipe&&pe<ipe*0.5?'发行PE仅为行业'+(pe/ipe*100).toFixed(0)+'%，折价深、修复空间大但情绪双刃。':'')+'首日定价由'+(online?online.toFixed(0):'—')+'万可交易筹码+申购热度主导，PE只是事后解释。';
+  }
+  if(listDate)LIST_TS=new Date(listDate+'T09:25:00+08:00').getTime();
 }
 
 /* ============ 监控渲染 ============ */
@@ -677,11 +711,12 @@ function switchTab(t){
   });
 }
 function tickCountdown(){
-  const now=new Date(),list=new Date('2026-08-21T09:25:00+08:00');
-  let target=list,label='距 8/21 9:25 集合竞价';
-  if(now>list){target=new Date('2026-08-21T09:30:00+08:00');label='距开盘';}
-  if(now>target){$('countdown').textContent='已开盘 · 盯盘中';return;}
-  const s=Math.floor((target-now)/1000);
+  const now=Date.now();
+  if(!LIST_TS){$('countdown').textContent='未加载新股';return;}
+  const auc=LIST_TS, open=LIST_TS+5*60*1000;
+  if(now>open){$('countdown').textContent='已开盘 · 盯盘中';return;}
+  const t=now<auc?auc:open, label=now<auc?'距集合竞价':'距开盘';
+  const s=Math.floor((t-now)/1000);
   $('countdown').textContent=label+' '+Math.floor(s/3600)+'h'+String(Math.floor(s%3600/60)).padStart(2,'0')+'m';
 }
 let loopN=0;
@@ -696,9 +731,11 @@ function loop(){
 initChecks();
 const g0=localStorage.getItem('bse_grade');if(g0)setGrade(g0);
 renderLog();
+(function(){const saved=localStorage.getItem('bse_code')||$('inCode').value.trim();if(saved)loadStock(saved,true);})();
 loadQuote(true);
 fetchMinute($('inCode').value.trim());
 setInterval(loop,10000);
 </script>
 </body>
 </html>
+
