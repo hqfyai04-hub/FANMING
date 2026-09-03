@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
-<title>北交所首日卖出助手 v1.7</title>
+<title>北交所首日卖出助手 v1.8</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
@@ -19,6 +19,8 @@
   ::-webkit-scrollbar{display:none}
   @keyframes flash{0%,100%{opacity:1}50%{opacity:.45}}
   .flash{animation:flash 1s infinite}
+  /* 抵消QW Pages注入脚本对fixed元素的下移：强制底部导航重新贴底 */
+  #tabbar{top:auto!important}
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 max-w-md mx-auto pb-24 select-none">
@@ -26,7 +28,7 @@
 <!-- 顶栏 -->
 <header class="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
   <div>
-    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.7</span></div>
+    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.8</span></div>
     <div class="text-[11px] text-slate-400">47只回测 + 珈凯/杰理/恒兴/双英/信胜/华大实盘校准 · 填代码自动更新</div>
   </div>
   <div class="flex flex-col items-end gap-0.5">
@@ -263,7 +265,7 @@
 </main>
 
 <!-- 底部导航 -->
-<nav class="fixed bottom-0 inset-x-0 z-20 max-w-md mx-auto bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4 py-1.5 px-2" style="padding-bottom:calc(6px + env(safe-area-inset-bottom))">
+<nav id="tabbar" class="fixed bottom-0 inset-x-0 z-20 max-w-md mx-auto bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4 py-1.5 px-2" style="padding-bottom:calc(6px + env(safe-area-inset-bottom))">
   <button onclick="switchTab('plan')" id="btn-plan" class="tabbtn on flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px]"><iconify-icon icon="mdi:clipboard-text-outline" width="22"></iconify-icon>盘前预案</button>
   <button onclick="switchTab('ladder')" id="btn-ladder" class="tabbtn flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] text-slate-400"><iconify-icon icon="mdi:calculator-variant-outline" width="22"></iconify-icon>预埋单</button>
   <button onclick="switchTab('monitor')" id="btn-monitor" class="tabbtn flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] text-slate-400"><iconify-icon icon="mdi:chart-line" width="22"></iconify-icon>盘中监控</button>
@@ -749,6 +751,8 @@ renderLog();
 loadQuote(true);
 fetchMinute($('inCode').value.trim());
 setInterval(loop,10000);
+// 抵消QW Pages注入的顶部48px banner：把sticky顶栏下移，避免滚动时被banner遮住（海外站无banner，轮询6秒自动停）
+(function fixBanner(n){n=n||0;var b=document.getElementById('mulepage-bar');if(b){var hd=document.querySelector('header');if(hd)hd.style.top='48px';}else if(n<30){setTimeout(function(){fixBanner(n+1);},200);}})();
 </script>
 </body>
 </html>
