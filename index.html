@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
-<title>北交所首日卖出助手 v1.8</title>
+<title>北交所首日卖出助手 v1.9</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
@@ -28,7 +28,7 @@
 <!-- 顶栏 -->
 <header class="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
   <div>
-    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.8</span></div>
+    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.9</span></div>
     <div class="text-[11px] text-slate-400">47只回测 + 珈凯/杰理/恒兴/双英/信胜/华大实盘校准 · 填代码自动更新</div>
   </div>
   <div class="flex flex-col items-end gap-0.5">
@@ -69,9 +69,9 @@
   </div>
 
   <div class="card mt-2">
-    <div class="font-bold text-sm">中签者纪律（卖出助手v1.8 · 金钛9/3复盘）</div>
+    <div class="font-bold text-sm">中签者纪律（卖出助手v1.9 · 金钛9/3+杰锋9/7复盘）</div>
     <ul class="text-[12px] text-slate-300 mt-1 space-y-1 leading-5">
-      <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单（开盘&gt;+75%自动③档+20%，首分钟吸筹自动升档）；<b class="text-rose-300">开盘≥+200%极端高开：价格发现一步到位、高点即首分钟，梯子封顶+5%贴顶预埋、严禁挂+10%（金钛挂33脱空被迫26卖，全天高仅31.88@9:31）</b></li>
+      <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单（开盘&gt;+75%自动③档+20%，首分钟吸筹自动升档；<b class="text-amber-300">薄竞价+高开25~50%：梯子硬顶=开盘+6%，禁挂开盘+8%以上</b>）；<b class="text-rose-300">开盘≥+200%极端高开：价格发现一步到位、高点即首分钟，梯子封顶+5%贴顶预埋、严禁挂+10%（金钛挂33脱空被迫26卖，全天高仅31.88@9:31；杰锋9/7挂49=开盘+8.9%差全天高48.86仅1毛4脱空、被迫44.4下切）</b></li>
       <li>② 开盘前5分钟拉升窗结束：仅①档撤单；竞价换手≤4%时②③<b class="text-amber-300">保留至10:15</b>衰减分型再决定（恒兴教训：撤早了错过二波）</li>
       <li>③ 10:15 衰减&gt;55% → 市价清仓（<b class="text-rose-300">无绿鞋，比双英更果断</b>）；40-55%中性 → 减半留半，留仓退出锚=<b>午盘回抽均价线高点</b>；&lt;40%偏强须过<b class="text-amber-300">价格门控</b>（价站上均价线+距高点回撤&lt;15%）才持有等二波，否则按偏弱清（金钛衰减30%系开盘脉冲天量假偏强）</li>
       <li>④ 半日换手&gt;70% → 午后<b class="text-amber-300">任何冲高即兑现</b>，不持到收盘（49只研究：70-80%组57%午后冲高&gt;3%但收跌71%）</li>
@@ -119,7 +119,7 @@
   <div class="card mt-2">
     <div class="font-bold text-sm">分支规则（回测校准）</div>
     <div class="text-[12px] text-slate-300 mt-1 space-y-1.5 leading-5">
-      <div><span class="chip bg-amber-500/15 text-amber-300">薄 ≤3%</span> 高点大概率前5分钟（样本中位第4分钟）→ +3/+6/+10 快档；第一分钟量&gt;竞价量3倍且无跟进 → 剩余市价。冰点日最可能落此档</div>
+      <div><span class="chip bg-amber-500/15 text-amber-300">薄 ≤3%</span> 高点大概率前5分钟（样本中位第4分钟）→ +3/+6/+10 快档；<b class="text-rose-300">若同时高开&gt;+25%则封顶+6%、禁用+10%（杰锋挂开盘+8.9%脱空教训）</b>；第一分钟量&gt;竞价量3倍且无跟进 → 剩余市价。冰点日最可能落此档</div>
       <div><span class="chip bg-emerald-500/15 text-emerald-300">正常 4-8%</span> 价格发现充分、有二波余地 → +5/+10/+15</div>
       <div><span class="chip bg-violet-500/15 text-violet-300">厚 &gt;8%</span> 高点中位推迟到46分钟 → +5/+10/+20，第三档抬高防卖飞</div>
       <div class="text-slate-500 text-[11px]">档位相对开盘价。竞价换手常见区间4-8%，&gt;12%属极端过热。<b class="text-amber-300/90">竞价≤4%（薄/空档）时②③档保留至10:15衰减分型再决定，勿急着撤——恒兴/杰理二波都在10:00后</b></div>
@@ -645,7 +645,10 @@ function calcLadder(){
   if(og>=200){
     tiers=[3,5,5];tag='极端高开 +'+og.toFixed(0)+'%';cls2='bg-rose-500/15 text-rose-300';
     note='价格发现一步到位、高点即首分钟（珈凯61.48@9:31/金钛31.88@9:31）→ 梯子封顶+5%贴顶预埋，严禁挂+10%（金钛挂33脱空被迫26卖）；拉升窗5分钟未成交立即切衰减率防线';
-  } else if(og>75&&tiers[2]<20){tiers[2]=20;note+='；开盘+'+og.toFixed(0)+'%>+75%乐观档：③档升+20%防卖飞（双英教训）';}
+  } else if(ap<=3&&og>=25&&og<200){
+    tiers=[3,6,6];cls2='bg-rose-500/15 text-rose-300';
+    note='薄竞价+高开'+og.toFixed(0)+'%：价格发现前5分钟见顶→梯子硬顶=开盘+6%，严禁挂开盘+8%以上（杰锋920269实证：竞价2.18%薄/开+46.6%/09:32见顶48.86后单边阴跌收41.25，挂49=开盘+8.9%差全天最高1毛4脱空、被迫44.4手动下切；正解+3/+6贴顶预埋可在顶附近成交，多约7pp）；未成交5分钟切衰减率防线';
+  } else if(og>75&&ap>3&&tiers[2]<20){tiers[2]=20;note+='；开盘+'+og.toFixed(0)+'%>+75%乐观档：③档升+20%防卖飞（双英教训，须竞价>4%厚档/首分钟吸筹，薄竞价禁升档）';}
   let s1=Math.floor(S/3/100)*100,s2=s1,s3=S-s1-s2;
   if(s3<100){s1=Math.floor(S*0.34/100)*100;s2=Math.floor(S*0.33/100)*100;s3=S-s1-s2;}
   const qtys=[s1,s2,s3];
@@ -670,7 +673,7 @@ function renderLadderRows(){
 }
 function copyLadder(){
   const rows=[...$('ladderRows').querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim()).join(' '));
-  const txt='预埋卖单\n'+rows.join('\n')+'\n规则：拉升窗(前5分钟)结束后仅撤①档；竞价≤4%时②③保留至10:15衰减分型再决定；9:40-10:00盲区手放开（破线+破整数关双触发也不卖）；触发临停→未成交③档撤单改持有，最后一次临停复牌后5分钟内高点兑现；开盘≥+200%极端高开梯子封顶+5%、严禁挂+10%（金钛教训）；衰减<40%须过价格门控（价站上均价线+距高点回撤<15%）否则按偏弱清';
+  const txt='预埋卖单\n'+rows.join('\n')+'\n规则：拉升窗(前5分钟)结束后仅撤①档；竞价≤4%时②③保留至10:15衰减分型再决定；9:40-10:00盲区手放开（破线+破整数关双触发也不卖）；触发临停→未成交③档撤单改持有，最后一次临停复牌后5分钟内高点兑现；开盘≥+200%极端高开梯子封顶+5%、严禁挂+10%（金钛教训）；薄竞价+高开25~50%梯子硬顶=开盘+6%、严禁挂开盘+8%以上（杰锋挂49差全天高1毛4脱空教训）；衰减<40%须过价格门控（价站上均价线+距高点回撤<15%）否则按偏弱清';
   if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>alert('已复制到剪贴板'));}
   else{prompt('长按复制：',txt);}
 }
