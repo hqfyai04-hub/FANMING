@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
-<title>北交所首日卖出助手 v1.8</title>
+<title>北交所首日卖出助手 v1.10</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
@@ -19,6 +19,8 @@
   ::-webkit-scrollbar{display:none}
   @keyframes flash{0%,100%{opacity:1}50%{opacity:.45}}
   .flash{animation:flash 1s infinite}
+  /* 抵消QW Pages注入脚本对fixed元素的下移：强制底部导航重新贴底 */
+  #tabbar{top:auto!important}
 </style>
 </head>
 <body class="bg-slate-950 text-slate-100 max-w-md mx-auto pb-24 select-none">
@@ -26,7 +28,7 @@
 <!-- 顶栏 -->
 <header class="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
   <div>
-    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.8</span></div>
+    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.10</span></div>
     <div class="text-[11px] text-slate-400">47只回测 + 珈凯/杰理/恒兴/双英/信胜/华大实盘校准 · 填代码自动更新</div>
   </div>
   <div class="flex flex-col items-end gap-0.5">
@@ -67,11 +69,11 @@
   </div>
 
   <div class="card mt-2">
-    <div class="font-bold text-sm">中签者纪律（卖出助手v1.8）</div>
+    <div class="font-bold text-sm">中签者纪律（卖出助手v1.10 · 金钛9/3+杰锋9/7复盘）</div>
     <ul class="text-[12px] text-slate-300 mt-1 space-y-1 leading-5">
-      <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单（开盘&gt;+75%自动③档+20%，首分钟吸筹自动升档）</li>
+      <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单（开盘&gt;+75%自动③档+20%，首分钟吸筹自动升档；<b class="text-amber-300">薄竞价+高开25~50%：梯子硬顶=开盘+6%，禁挂开盘+8%以上</b>）；<b class="text-rose-300">开盘≥+200%极端高开：价格发现一步到位、高点即首分钟，梯子封顶+5%贴顶预埋、严禁挂+10%（金钛挂33脱空被迫26卖，全天高仅31.88@9:31；杰锋9/7挂49=开盘+8.9%差全天高48.86仅1毛4脱空、被迫44.4下切）</b></li>
       <li>② 开盘前5分钟拉升窗结束：仅①档撤单；竞价换手≤4%时②③<b class="text-amber-300">保留至10:15</b>衰减分型再决定（恒兴教训：撤早了错过二波）</li>
-      <li>③ 10:15 衰减&gt;55% → 市价清仓（<b class="text-rose-300">无绿鞋，比双英更果断</b>）；40-55%中性 → 减半留半，留仓退出锚=<b>午盘回抽均价线高点</b>；&lt;40%偏强 → 持有等二波</li>
+      <li>③ 10:15 衰减&gt;55% → 市价清仓（<b class="text-rose-300">无绿鞋，比双英更果断</b>）；40-55%中性 → 减半留半，留仓退出锚=<b>午盘回抽均价线高点</b>；&lt;40%偏强须过<b class="text-amber-300">价格门控</b>（价站上均价线+距高点回撤&lt;15%）才持有等二波，否则按偏弱清（金钛衰减30%系开盘脉冲天量假偏强）</li>
       <li>④ 半日换手&gt;70% → 午后<b class="text-amber-300">任何冲高即兑现</b>，不持到收盘（49只研究：70-80%组57%午后冲高&gt;3%但收跌71%）</li>
       <li>⑤ 周五上市：首日清仓不过周末（次日下跌概率~70%：恒兴-19.9%、双英-30.0%）</li>
       <li class="text-amber-300">⑥ 9:40-10:00 规则盲区：手放开，破均价线+破整数关双触发也不得卖；⑦ 触发临停=逼空确认：持到最后一次临停复牌后5分钟内高点兑现，复牌首分钟巨量长阴=立即市价（双英10:02式）</li>
@@ -117,7 +119,7 @@
   <div class="card mt-2">
     <div class="font-bold text-sm">分支规则（回测校准）</div>
     <div class="text-[12px] text-slate-300 mt-1 space-y-1.5 leading-5">
-      <div><span class="chip bg-amber-500/15 text-amber-300">薄 ≤3%</span> 高点大概率前5分钟（样本中位第4分钟）→ +3/+6/+10 快档；第一分钟量&gt;竞价量3倍且无跟进 → 剩余市价。冰点日最可能落此档</div>
+      <div><span class="chip bg-amber-500/15 text-amber-300">薄 ≤3%</span> 高点大概率前5分钟（样本中位第4分钟）→ +3/+6/+10 快档；<b class="text-rose-300">若同时高开&gt;+25%则封顶+6%、禁用+10%（杰锋挂开盘+8.9%脱空教训）</b>；第一分钟量&gt;竞价量3倍且无跟进 → 剩余市价。冰点日最可能落此档</div>
       <div><span class="chip bg-emerald-500/15 text-emerald-300">正常 4-8%</span> 价格发现充分、有二波余地 → +5/+10/+15</div>
       <div><span class="chip bg-violet-500/15 text-violet-300">厚 &gt;8%</span> 高点中位推迟到46分钟 → +5/+10/+20，第三档抬高防卖飞</div>
       <div class="text-slate-500 text-[11px]">档位相对开盘价。竞价换手常见区间4-8%，&gt;12%属极端过热。<b class="text-amber-300/90">竞价≤4%（薄/空档）时②③档保留至10:15衰减分型再决定，勿急着撤——恒兴/杰理二波都在10:00后</b></div>
@@ -263,7 +265,7 @@
 </main>
 
 <!-- 底部导航 -->
-<nav class="fixed bottom-0 inset-x-0 z-20 max-w-md mx-auto bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4 py-1.5 px-2" style="padding-bottom:calc(6px + env(safe-area-inset-bottom))">
+<nav id="tabbar" class="fixed bottom-0 inset-x-0 z-20 max-w-md mx-auto bg-slate-900/95 backdrop-blur border-t border-slate-800 grid grid-cols-4 py-1.5 px-2" style="padding-bottom:calc(6px + env(safe-area-inset-bottom))">
   <button onclick="switchTab('plan')" id="btn-plan" class="tabbtn on flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px]"><iconify-icon icon="mdi:clipboard-text-outline" width="22"></iconify-icon>盘前预案</button>
   <button onclick="switchTab('ladder')" id="btn-ladder" class="tabbtn flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] text-slate-400"><iconify-icon icon="mdi:calculator-variant-outline" width="22"></iconify-icon>预埋单</button>
   <button onclick="switchTab('monitor')" id="btn-monitor" class="tabbtn flex flex-col items-center gap-0.5 rounded-lg py-1.5 text-[10px] text-slate-400"><iconify-icon icon="mdi:chart-line" width="22"></iconify-icon>盘中监控</button>
@@ -396,7 +398,7 @@ function renderPlan(row){
     ];
     $('planCards').innerHTML=sc.map(([c,name,p,m],idx)=>{
       const o=ip*m, h=ip*m*1.35, cl=ip*m*1.18;
-      const extra=idx===3?' · 高点大概率开盘5分钟内，梯子易全档脱空，按薄竞价应对':'';
+      const extra=idx===3?' · 高点大概率开盘5分钟内（珈凯/金钛高点即首分钟），梯子封顶+5%贴顶预埋、严禁+10%档，未成交立即切衰减率防线':'';
       return '<div class="card border-l-4 !border-l-'+c+'-500'+(idx?' mt-2':'')+'">'
         +'<div class="flex justify-between items-center"><span class="font-bold text-'+c+'-300">'+name+'</span><span class="chip bg-'+c+'-500/15 text-'+c+'-300">概率 '+p+'</span></div>'
         +'<div class="text-sm mt-1">开盘 <b>'+o.toFixed(2)+'</b> · 盘中高 '+h.toFixed(2)+' · 收盘 '+cl.toFixed(2)+extra+'</div>'
@@ -421,7 +423,7 @@ $('inFloat').addEventListener('input',()=>{floatDirty=true;$('floatSrc').textCon
 
 function cvAt(t){let v=null;for(const m of MIN){if(m.t<=t)v=m.cv;else break;}return v;}
 function minuteBars(){const r=[];for(let i=1;i<MIN.length;i++){r.push({t:MIN[i].t,v:MIN[i].cv-MIN[i-1].cv});}return r;}
-/* 竞价量采集：优先分钟线0930累计量(=竞价量,9:30后稳定)，回退9:25-9:30实时volHand；
+/* 竞价量采集：优先分钟线0930累计量(=竞价量,9:30后稳定可补采)，回退9:25-9:30实时volHand；
    分母优先用换手率推导的liveFloat(含流通老股,与腾讯口径一致)，避免用网上发行量高估换手率 */
 function tryFillAuction(){
   if(aucManual||aucFilled) return;
@@ -565,10 +567,10 @@ function runSignals(q,vwap,ns){
     $('mVwapNote').textContent=decayClass==='strong'?'偏强型：二波后破均价线且不收回=卖出信号':'中性型：剩余半仓以破均价线为最后卖点';
   }
   // 衰减自动判定
-  renderDecayAuto(q,ns);
+  renderDecayAuto(q,ns,vwap);
 }
 
-function renderDecayAuto(q,ns){
+function renderDecayAuto(q,ns,vwap){
   const box=$('decayAuto');
   const mb=minuteBars(); // [{t,v}] 每分钟量，v=0为停牌bar
   if(ns<10*3600+15*60){
@@ -583,8 +585,19 @@ function renderDecayAuto(q,ns){
   if(!am.length||!pm.length){box.innerHTML='<span class="text-rose-300">分钟数据缺失，请用下方手动覆盖</span>';return;}
   const ratio=(pm.reduce((s,b)=>s+b.v,0)/pm.length)/(am.reduce((s,b)=>s+b.v,0)/am.length)*100;
   let v,c,act;
-  if(ratio<40){decayClass='strong';v='偏强';c='bg-sky-500/15 text-sky-300 border-sky-500/40';
-    act='可继续持有，高点可能在午盘后。卖出信号=二波后跌破均价线且不收回。现价 '+fmt(q.price);}
+  if(ratio<40){
+    // 价格门控（信胜/金钛：开盘脉冲天量污染分母→衰减率假偏强）：偏强须①价站上均价线 且 ②距高点回撤<15%
+    const dd=q.high?(1-q.price/q.high)*100:0;
+    const belowVwap=vwap&&q.price<vwap;
+    const nearOpen=q.open&&Math.abs(q.price/q.open-1)*100<=5; // 底部窄幅横盘豁免（华大型保留偏强）
+    if((belowVwap||dd>=15)&&!nearOpen){
+      decayClass='weak';v='偏弱(门控降级)';c='bg-rose-500/15 text-rose-300 border-rose-500/40';
+      act='⚠衰减'+fmt(ratio,1)+'%表面偏强，但'+(belowVwap?'现价'+fmt(q.price)+'压在均价线下方':'')+(belowVwap&&dd>=15?'，且':'')+(dd>=15?'距高点回撤'+dd.toFixed(0)+'%≥15%':'')+'——开盘脉冲天量污染分母的假偏强（信胜/金钛），按偏弱清仓、逢反弹卖';
+    }else{
+      decayClass='strong';v='偏强'+(nearOpen&&belowVwap?'(横盘豁免)':'');c='bg-sky-500/15 text-sky-300 border-sky-500/40';
+      act='可继续持有，高点可能在午盘后。卖出信号=二波后跌破均价线且不收回。现价 '+fmt(q.price);
+    }
+  }
   else if(ratio<=55){decayClass='mid';v='中性';c='bg-amber-500/15 text-amber-300 border-amber-500/40';
     act='现在减半仓（现价 '+fmt(q.price)+'），剩余半仓盯均价线，午盘回抽不收回=最后卖点';}
   else{decayClass='weak';v='偏弱';c='bg-rose-500/15 text-rose-300 border-rose-500/40';
@@ -644,10 +657,16 @@ function calcLadder(){
   if(ap<=3){tag='薄竞价';tiers=[3,6,10];cls2='bg-amber-500/15 text-amber-300';note='高点大概率前5分钟，挂单要快';}
   else if(ap<=8){tag='正常竞价';tiers=[5,10,15];cls2='bg-emerald-500/15 text-emerald-300';note='有二波余地，拉升窗后看衰减';}
   else{tag='厚竞价';tiers=[5,10,20];cls2='bg-violet-500/15 text-violet-300';note='高点中位46分钟，第三档抬高防卖飞';}
-  // 高开联动升档（8/19双英）：开盘>+75%时③档一律升+20%
+  // 极端高开≥+200%（珈凯+金钛2样本）：价格发现一步到位、高点即首分钟，梯子封顶+5%，严禁挂+10%以上
   const ip=issue();
   const og=ip?(open/ip-1)*100:0;
-  if(og>75&&tiers[2]<20){tiers[2]=20;note+='；开盘+'+og.toFixed(0)+'%>+75%乐观档：③档升+20%防卖飞（双英教训）';}
+  if(og>=200){
+    tiers=[3,5,5];tag='极端高开 +'+og.toFixed(0)+'%';cls2='bg-rose-500/15 text-rose-300';
+    note='价格发现一步到位、高点即首分钟（珈凯61.48@9:31/金钛31.88@9:31）→ 梯子封顶+5%贴顶预埋，严禁挂+10%（金钛挂33脱空被迫26卖）；拉升窗5分钟未成交立即切衰减率防线';
+  } else if(ap<=3&&og>=25&&og<200){
+    tiers=[3,6,6];cls2='bg-rose-500/15 text-rose-300';
+    note='薄竞价+高开'+og.toFixed(0)+'%：价格发现前5分钟见顶→梯子硬顶=开盘+6%，严禁挂开盘+8%以上（杰锋920269实证：竞价2.18%薄/开+46.6%/09:32见顶48.86后单边阴跌收41.25，挂49=开盘+8.9%差全天最高1毛4脱空、被迫44.4手动下切；正解+3/+6贴顶预埋可在顶附近成交，多约7pp）；未成交5分钟切衰减率防线';
+  } else if(og>75&&ap>3&&tiers[2]<20){tiers[2]=20;note+='；开盘+'+og.toFixed(0)+'%>+75%乐观档：③档升+20%防卖飞（双英教训，须竞价>4%厚档/首分钟吸筹，薄竞价禁升档）';}
   let s1=Math.floor(S/3/100)*100,s2=s1,s3=S-s1-s2;
   if(s3<100){s1=Math.floor(S*0.34/100)*100;s2=Math.floor(S*0.33/100)*100;s3=S-s1-s2;}
   const qtys=[s1,s2,s3];
@@ -672,7 +691,7 @@ function renderLadderRows(){
 }
 function copyLadder(){
   const rows=[...$('ladderRows').querySelectorAll('tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim()).join(' '));
-  const txt='预埋卖单\n'+rows.join('\n')+'\n规则：拉升窗(前5分钟)结束后仅撤①档；竞价≤4%时②③保留至10:15衰减分型再决定；9:40-10:00盲区手放开（破线+破整数关双触发也不卖）；触发临停→未成交③档撤单改持有，最后一次临停复牌后5分钟内高点兑现';
+  const txt='预埋卖单\n'+rows.join('\n')+'\n规则：拉升窗(前5分钟)结束后仅撤①档；竞价≤4%时②③保留至10:15衰减分型再决定；9:40-10:00盲区手放开（破线+破整数关双触发也不卖）；触发临停→未成交③档撤单改持有，最后一次临停复牌后5分钟内高点兑现；开盘≥+200%极端高开梯子封顶+5%、严禁挂+10%（金钛教训）；薄竞价+高开25~50%梯子硬顶=开盘+6%、严禁挂开盘+8%以上（杰锋挂49差全天高1毛4脱空教训）；衰减<40%须过价格门控（价站上均价线+距高点回撤<15%）否则按偏弱清';
   if(navigator.clipboard){navigator.clipboard.writeText(txt).then(()=>alert('已复制到剪贴板'));}
   else{prompt('长按复制：',txt);}
 }
@@ -753,6 +772,8 @@ renderLog();
 loadQuote(true);
 fetchMinute($('inCode').value.trim());
 setInterval(loop,10000);
+// 抵消QW Pages注入的顶部48px banner：把sticky顶栏下移，避免滚动时被banner遮住（海外站无banner，轮询6秒自动停）
+(function fixBanner(n){n=n||0;var b=document.getElementById('mulepage-bar');if(b){var hd=document.querySelector('header');if(hd)hd.style.top='48px';}else if(n<30){setTimeout(function(){fixBanner(n+1);},200);}})();
 </script>
 </body>
 </html>
