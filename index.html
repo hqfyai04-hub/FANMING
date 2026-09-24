@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#020617">
-<title>北交所首日卖出助手 v1.11</title>
+<title>北交所首日卖出助手 v1.12</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://code.iconify.design/iconify-icon/1.0.8/iconify-icon.min.js"></script>
 <style>
@@ -28,7 +28,7 @@
 <!-- 顶栏 -->
 <header class="sticky top-0 z-20 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
   <div>
-    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.11</span></div>
+    <div class="font-bold text-[15px]">北交所首日卖出助手 <span class="text-slate-500 font-normal text-xs">v1.12</span></div>
     <div class="text-[11px] text-slate-400">47只回测 + 珈凯/杰理/恒兴/双英/信胜/华大实盘校准 · 填代码自动更新</div>
   </div>
   <div class="flex flex-col items-end gap-0.5">
@@ -69,7 +69,7 @@
   </div>
 
   <div class="card mt-2">
-    <div class="font-bold text-sm">中签者纪律（卖出助手v1.11 · 金钛9/3+杰锋9/7复盘）</div>
+    <div class="font-bold text-sm">中签者纪律（卖出助手v1.12 · 金钛9/3+杰锋9/7复盘）</div>
     <ul class="text-[12px] text-slate-300 mt-1 space-y-1 leading-5">
       <li>① 9:25 读竞价换手定梯子 →「预埋单」页生成分批限价单（开盘&gt;+75%自动③档+20%，首分钟吸筹自动升档；<b class="text-amber-300">薄竞价+高开25~50%：梯子硬顶=开盘+6%，禁挂开盘+8%以上</b>）；<b class="text-rose-300">开盘≥+200%极端高开：价格发现一步到位、高点即首分钟，梯子封顶+5%贴顶预埋、严禁挂+10%（金钛挂33脱空被迫26卖，全天高仅31.88@9:31；杰锋9/7挂49=开盘+8.9%差全天高48.86仅1毛4脱空、被迫44.4下切）</b></li>
       <li>② 开盘前5分钟拉升窗结束：仅①档撤单；竞价换手≤4%时②③<b class="text-amber-300">保留至10:15</b>衰减分型再决定（恒兴教训：撤早了错过二波）</li>
@@ -587,15 +587,25 @@ function renderDecayAuto(q,ns,vwap){
   const halted=mb.filter(b=>b.v===0&&b.t>='0931'&&b.t<='1015').length;
   if(!am.length||!pm.length){box.innerHTML='<span class="text-rose-300">分钟数据缺失，请用下方手动覆盖</span>';return;}
   const ratio=(pm.reduce((s,b)=>s+b.v,0)/pm.length)/(am.reduce((s,b)=>s+b.v,0)/am.length)*100;
+  // 脉冲污染：前5分钟量占前30分钟比重>45%则衰减率作废（百瑞吉9/24达52.8%假偏强）
+  const v5=mb.filter(b=>b.t>='0931'&&b.t<='0935'&&b.v>0).reduce((s,b)=>s+b.v,0);
+  const v30=am.reduce((s,b)=>s+b.v,0);
+  const pulse=v30?v5/v30*100:0;
+  // 5分钟均线（1分钟收盘）空头排列：MA5<MA10<MA20且价在MA20下
+  const ps=MIN.filter(m=>m.t<='1015').map(m=>m.px);
+  const maN=n=>ps.length>=n?ps.slice(-n).reduce((a,b)=>a+b,0)/n:null;
+  const ma5=maN(5),ma10=maN(10),ma20=maN(20);
+  const maBear=(ma5!=null&&ma10!=null&&ma20!=null&&ma5<ma10&&ma10<ma20&&q.price<ma20);
   let v,c,act;
   if(ratio<40){
     // 价格门控（信胜/金钛：开盘脉冲天量污染分母→衰减率假偏强）：偏强须①价站上均价线 且 ②距高点回撤<15%
     const dd=q.high?(1-q.price/q.high)*100:0;
     const belowVwap=vwap&&q.price<vwap;
     const nearOpen=q.open&&Math.abs(q.price/q.open-1)*100<=5; // 底部窄幅横盘豁免（华大型保留偏强）
-    if((belowVwap||dd>=15)&&!nearOpen){
-      decayClass='weak';v='偏弱(门控降级)';c='bg-rose-500/15 text-rose-300 border-rose-500/40';
-      act='⚠衰减'+fmt(ratio,1)+'%表面偏强，但'+(belowVwap?'现价'+fmt(q.price)+'压在均价线下方':'')+(belowVwap&&dd>=15?'，且':'')+(dd>=15?'距高点回撤'+dd.toFixed(0)+'%≥15%':'')+'——开盘脉冲天量污染分母的假偏强（信胜/金钛），按偏弱清仓、逢反弹卖';
+    if(pulse>45||maBear||((belowVwap||dd>=15)&&!nearOpen)){
+      decayClass='weak';v='偏弱(假偏强降级)';c='bg-rose-500/15 text-rose-300 border-rose-500/40';
+      const why=[];if(pulse>45)why.push('开盘前5分钟量占前30分钟'+pulse.toFixed(0)+'%(>45%脉冲污染分母)');if(maBear)why.push('5分钟均线空头排列(MA5<MA10<MA20且价在MA20下)');if(belowVwap)why.push('现价压在均价线下方');if(dd>=15)why.push('距高点回撤'+dd.toFixed(0)+'%≥15%');
+      act='⚠衰减'+fmt(ratio,1)+'%表面偏强，但'+why.join('、')+'——假偏强（百瑞吉/信胜/金钛），按偏弱清仓、逢反弹卖';
     }else{
       decayClass='strong';v='偏强'+(nearOpen&&belowVwap?'(横盘豁免)':'');c='bg-sky-500/15 text-sky-300 border-sky-500/40';
       act='可继续持有，高点可能在午盘后。卖出信号=二波后跌破均价线且不收回。现价 '+fmt(q.price);
